@@ -34,8 +34,8 @@ module.exports =
 /******/ 	// the startup function
 /******/ 	function startup() {
 /******/ 		// Load entry module and return exports
-/******/ 		return __webpack_require__(226);
-/******/ 	}
+/******/ 		return __webpack_require__(660);
+/******/ 	};
 /******/
 /******/ 	// run startup
 /******/ 	return startup();
@@ -57,7 +57,7 @@ module.exports = require("child_process");
 
 /***/ }),
 
-/***/ 151:
+/***/ 226:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
@@ -72,7 +72,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const command_1 = __webpack_require__(176);
+const command_1 = __webpack_require__(358);
 const os = __webpack_require__(87);
 const path = __webpack_require__(622);
 /**
@@ -259,7 +259,7 @@ exports.getState = getState;
 
 /***/ }),
 
-/***/ 176:
+/***/ 358:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
@@ -332,69 +332,7 @@ function escape(s) {
 
 /***/ }),
 
-/***/ 226:
-/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
-
-const core = __webpack_require__(151)
-const exec = __webpack_require__(857)
-
-const SCOPE_DSN = 'SCOPE_DSN'
-
-const DEFAULT_COMMAND =
-  'npm test -- --testRunner=@undefinedlabs/scope-agent/jestTestRunner --runner=@undefinedlabs/scope-agent/jestRunner --setupFilesAfterEnv=@undefinedlabs/scope-agent/jestSetupTests'
-
-async function run() {
-  try {
-    const command = core.getInput('command') || DEFAULT_COMMAND
-    const dsn = core.getInput('dsn') || process.env[SCOPE_DSN]
-
-    if (!dsn) {
-      throw Error('Cannot find the Scope DSN')
-    }
-
-    let apiEndpoint, apiKey
-    try {
-      const { username, origin } = new URL(dsn)
-      apiEndpoint = origin
-      apiKey = username
-    } catch (e) {}
-
-    if (!apiEndpoint || !apiKey) {
-      throw Error('SCOPE_DSN does not have the correct format')
-    }
-
-    console.log(`Command: ${command}`)
-    if (dsn) {
-      console.log(`DSN has been set.`)
-    }
-
-    await exec.exec('npm install --save-dev @undefinedlabs/scope-agent', null, {
-      ignoreReturnCode: true,
-    })
-
-    return ExecScopeRun(command, apiEndpoint, apiKey)
-  } catch (error) {
-    core.setFailed(error.message)
-  }
-}
-
-function ExecScopeRun(command = DEFAULT_COMMAND, apiEndpoint, apiKey) {
-  return exec.exec(command, null, {
-    env: {
-      ...process.env,
-      SCOPE_API_ENDPOINT: apiEndpoint,
-      SCOPE_APIKEY: apiKey,
-      SCOPE_AUTO_INSTRUMENT: true,
-    },
-  })
-}
-
-run()
-
-
-/***/ }),
-
-/***/ 448:
+/***/ 541:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
@@ -989,7 +927,75 @@ module.exports = require("path");
 
 /***/ }),
 
-/***/ 857:
+/***/ 660:
+/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
+
+const core = __webpack_require__(226)
+const exec = __webpack_require__(730)
+
+const SCOPE_DSN = 'SCOPE_DSN'
+
+const DEFAULT_ARGUMENTS = [
+  '--',
+  '--testRunner=@undefinedlabs/scope-agent/jestTestRunner',
+  '--runner=@undefinedlabs/scope-agent/jestRunner',
+  '--setupFilesAfterEnv=@undefinedlabs/scope-agent/jestSetupTests',
+]
+
+const DEFAULT_COMMAND = 'npm test'
+
+async function run() {
+  try {
+    const command = core.getInput('command') || DEFAULT_COMMAND
+    const dsn = core.getInput('dsn') || process.env[SCOPE_DSN]
+
+    if (!dsn) {
+      throw Error('Cannot find the Scope DSN')
+    }
+
+    let apiEndpoint, apiKey
+    try {
+      const { username, origin } = new URL(dsn)
+      apiEndpoint = origin
+      apiKey = username
+    } catch (e) {}
+
+    if (!apiEndpoint || !apiKey) {
+      throw Error('SCOPE_DSN does not have the correct format')
+    }
+
+    console.log(`Command: ${command}`)
+    if (dsn) {
+      console.log(`DSN has been set.`)
+    }
+
+    await exec.exec('npm install --save-dev @undefinedlabs/scope-agent', null, {
+      ignoreReturnCode: true,
+    })
+
+    return ExecScopeRun(command, apiEndpoint, apiKey)
+  } catch (error) {
+    core.setFailed(error.message)
+  }
+}
+
+function ExecScopeRun(command = DEFAULT_COMMAND, apiEndpoint, apiKey) {
+  return exec.exec(command, DEFAULT_ARGUMENTS, {
+    env: {
+      ...process.env,
+      SCOPE_API_ENDPOINT: apiEndpoint,
+      SCOPE_APIKEY: apiKey,
+      SCOPE_AUTO_INSTRUMENT: true,
+    },
+  })
+}
+
+run()
+
+
+/***/ }),
+
+/***/ 730:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
@@ -1004,7 +1010,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const tr = __webpack_require__(448);
+const tr = __webpack_require__(541);
 /**
  * Exec a command.
  * Output will be streamed to the live console.
