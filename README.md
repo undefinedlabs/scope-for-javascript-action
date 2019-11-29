@@ -4,6 +4,8 @@
 
 GitHub Action to run your tests automatically instrumented with the [Scope Javascript agent](http://home.undefinedlabs.com/goto/javascript-agent).
 
+This works both for browser js and Node.js.
+
 ## About Scope
 
 [Scope](https://scope.dev) gives developers production-level visibility on every test for every app – spanning mobile, monoliths, and microservices.
