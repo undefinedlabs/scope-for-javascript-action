@@ -4,7 +4,7 @@ const exec = require('@actions/exec')
 const SCOPE_DSN = 'SCOPE_DSN'
 
 const DEFAULT_COMMAND =
-  'npm test --testRunner=@undefinedlabs/scope-agent/jestTestRunner --runner=@undefinedlabs/scope-agent/jestRunner --setupFilesAfterEnv=@undefinedlabs/scope-agent/jestSetupTests'
+  'npm test -- --testRunner=@undefinedlabs/scope-agent/jestTestRunner --runner=@undefinedlabs/scope-agent/jestRunner --setupFilesAfterEnv=@undefinedlabs/scope-agent/jestSetupTests'
 
 async function run() {
   try {
