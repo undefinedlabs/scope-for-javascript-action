@@ -3,9 +3,12 @@ const exec = require('@actions/exec')
 
 const SCOPE_DSN = 'SCOPE_DSN'
 
+const DEFAULT_COMMAND =
+  'npm test --testRunner=@undefinedlabs/scope-agent/jestTestRunner --runner=@undefinedlabs/scope-agent/jestRunner --setupFilesAfterEnv=@undefinedlabs/scope-agent/jestSetupTests'
+
 async function run() {
   try {
-    const command = core.getInput('command') || 'npm test'
+    const command = core.getInput('command') || DEFAULT_COMMAND
     const dsn = core.getInput('dsn') || process.env[SCOPE_DSN]
 
     if (!dsn) {
@@ -28,14 +31,11 @@ async function run() {
       ignoreReturnCode: true,
     })
 
-    await ExecScopeRun(command, apiEndpoint, apiKey)
+    return ExecScopeRun(command, apiEndpoint, apiKey)
   } catch (error) {
     core.setFailed(error.message)
   }
 }
-
-const DEFAULT_COMMAND =
-  'npm test --testRunner=@undefinedlabs/scope-agent/jestTestRunner --runner=@undefinedlabs/scope-agent/jestRunner --setupFilesAfterEnv=@undefinedlabs/scope-agent/jestSetupTests'
 
 function ExecScopeRun(command = DEFAULT_COMMAND, apiEndpoint, apiKey) {
   return exec.exec(command, null, {
