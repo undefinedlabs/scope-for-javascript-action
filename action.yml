@@ -10,7 +10,7 @@ inputs:
     required: true
 runs:
   using: 'node12'
-  main: 'src/index.js'
+  main: 'dist/index.js'
 branding:
   icon: 'check-square'
   color: 'purple'
