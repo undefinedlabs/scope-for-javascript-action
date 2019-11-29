@@ -22,6 +22,10 @@ async function run() {
       apiKey = username
     } catch (e) {}
 
+    if (!apiEndpoint || !apiKey) {
+      throw Error('SCOPE_DSN does not have the correct format')
+    }
+
     console.log(`Command: ${command}`)
     if (dsn) {
       console.log(`DSN has been set.`)
