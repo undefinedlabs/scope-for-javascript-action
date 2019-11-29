@@ -1,16 +1,16 @@
-name: "Scope for Javascript"
-author: "Undefined Labs"
-description: "Automatically instruments and runs your tests using the Scope Javascript agent"
+name: 'Scope for Javascript'
+author: 'Undefined Labs'
+description: 'Automatically instruments and runs your tests using the Scope Javascript agent'
 inputs:
   command: # command to run your tests
-    description: "Command to run your tests"
+    description: 'Command to run your tests'
     required: false
   dsn: # scope dsn
-    description: "Scope DSN"
+    description: 'Scope DSN'
     required: true
 runs:
-  using: "node12"
-  main: "dist/index.js"
+  using: 'node12'
+  main: 'index.js'
 branding:
-  icon: "check-square"
-  color: "purple"
+  icon: 'check-square'
+  color: 'purple'
