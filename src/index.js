@@ -11,7 +11,16 @@ const DEFAULT_ARGUMENTS = [
   '--runInBand',
 ]
 
-const DEFAULT_COMMAND = 'npm test'
+const CYPRESS_SUPPORT_FILE = 'cypress/support/index.js'
+const CYPRESS_PLUGIN_FILE = 'cypress/plugins/index.js'
+
+const DEFAULT_CYPRESS_ARGUMENTS = [
+  '--config',
+  `supportFile=${CYPRESS_SUPPORT_FILE},pluginsFile=${CYPRESS_PLUGIN_FILE}`,
+]
+
+const NPM_DEFAULT_TEST_COMMAND = 'npm test'
+const YARN_DEFAULT_TEST_COMMAND = 'yarn test'
 
 const NPM_INSTALL_COMMAND = 'npm install --save-dev @undefinedlabs/scope-agent'
 const YARN_INSTALL_COMMAND = 'yarn add --dev @undefinedlabs/scope-agent'
@@ -20,7 +29,13 @@ const isYarnRepo = () => fs.existsSync('yarn.lock')
 
 async function run() {
   try {
-    const command = core.getInput('command') || DEFAULT_COMMAND
+    const isYarn = isYarnRepo()
+    console.log(`Project is using ${isYarn ? 'yarn' : 'npm'}`)
+
+    const defaultTestCommand = isYarn ? YARN_DEFAULT_TEST_COMMAND : NPM_DEFAULT_TEST_COMMAND
+
+    const command = core.getInput('command') || defaultTestCommand
+    const cypressCommand = core.getInput('command-cypress')
     const dsn = core.getInput('dsn') || process.env[SCOPE_DSN]
 
     if (!dsn) {
@@ -43,21 +58,38 @@ async function run() {
       console.log(`DSN has been set.`)
     }
 
-    const isYarn = isYarnRepo()
-
-    console.log(`Project is using ${isYarn ? 'yarn' : 'npm'}`)
-
     await exec.exec(isYarn ? YARN_INSTALL_COMMAND : NPM_INSTALL_COMMAND, null, {
       ignoreReturnCode: true,
     })
 
-    return ExecScopeRun(command, apiEndpoint, apiKey, isYarn)
+    // jest tests
+    ExecJestTests(command, apiEndpoint, apiKey, isYarn)
+
+    // cypress tests
+    if (cypressCommand) {
+      fs.writeFileSync(
+        CYPRESS_SUPPORT_FILE,
+        'require("@undefinedlabs/scope-agent/cypress/support")'
+      )
+      fs.writeFileSync(
+        CYPRESS_PLUGIN_FILE,
+        `
+        const { initCypressPlugin } = require("@undefinedlabs/scope-agent/cypress/plugin");
+        
+        module.exports = async (on, config) => {
+          const newConfig = await initCypressPlugin(on, config);
+          return newConfig;
+        };
+      `
+      )
+      ExecCypressTests(cypressCommand, apiEndpoint, apiKey, isYarn)
+    }
   } catch (error) {
     core.setFailed(error.message)
   }
 }
 
-function ExecScopeRun(command = DEFAULT_COMMAND, apiEndpoint, apiKey, isYarn) {
+function ExecJestTests(command, apiEndpoint, apiKey, isYarn) {
   return exec.exec(command, isYarn ? DEFAULT_ARGUMENTS : ['--', ...DEFAULT_ARGUMENTS], {
     env: {
       ...process.env,
@@ -67,6 +99,22 @@ function ExecScopeRun(command = DEFAULT_COMMAND, apiEndpoint, apiKey, isYarn) {
       CI: true,
     },
   })
+}
+
+function ExecCypressTests(command, apiEndpoint, apiKey, isYarn) {
+  return exec.exec(
+    command,
+    isYarn ? DEFAULT_CYPRESS_ARGUMENTS : ['--', ...DEFAULT_CYPRESS_ARGUMENTS],
+    {
+      env: {
+        ...process.env,
+        SCOPE_API_ENDPOINT: apiEndpoint,
+        SCOPE_APIKEY: apiKey,
+        SCOPE_AUTO_INSTRUMENT: true,
+        CI: true,
+      },
+    }
+  )
 }
 
 run()
