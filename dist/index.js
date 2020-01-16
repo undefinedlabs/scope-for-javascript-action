@@ -34,7 +34,7 @@ module.exports =
 /******/ 	// the startup function
 /******/ 	function startup() {
 /******/ 		// Load entry module and return exports
-/******/ 		return __webpack_require__(74);
+/******/ 		return __webpack_require__(765);
 /******/ 	};
 /******/
 /******/ 	// run startup
@@ -42,93 +42,6 @@ module.exports =
 /******/ })
 /************************************************************************/
 /******/ ({
-
-/***/ 74:
-/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
-
-const core = __webpack_require__(587)
-const exec = __webpack_require__(423)
-const path = __webpack_require__(622)
-const fs = __webpack_require__(747)
-
-const SCOPE_DSN = 'SCOPE_DSN'
-
-const DEFAULT_ARGUMENTS = [
-  '--testRunner=@undefinedlabs/scope-agent/jest/testRunner',
-  '--runner=@undefinedlabs/scope-agent/jest/runner',
-  '--setupFilesAfterEnv=@undefinedlabs/scope-agent/jest/setupTests',
-  '--runInBand',
-]
-
-const DEFAULT_COMMAND = 'npm test'
-
-const NPM_INSTALL_COMMAND = 'npm install --save-dev @undefinedlabs/scope-agent'
-const YARN_INSTALL_COMMAND = 'yarn add --dev @undefinedlabs/scope-agent'
-
-const isYarnRepo = (cwd = process.cwd()) => {
-  console.log('current directory', cwd)
-  console.log('yarn lock position', __webpack_require__.ab + "scope-for-javascript-action/" + cwd + '/yarn.lock')
-  return fs.existsSync(__webpack_require__.ab + "scope-for-javascript-action/" + cwd + '/yarn.lock')
-}
-
-async function run() {
-  try {
-    const command = core.getInput('command') || DEFAULT_COMMAND
-    const dsn = core.getInput('dsn') || process.env[SCOPE_DSN]
-
-    if (!dsn) {
-      throw Error('Cannot find the Scope DSN')
-    }
-
-    let apiEndpoint, apiKey
-    try {
-      const { username, origin } = new URL(dsn)
-      apiEndpoint = origin
-      apiKey = username
-    } catch (e) {}
-
-    if (!apiEndpoint || !apiKey) {
-      throw Error('SCOPE_DSN does not have the correct format')
-    }
-
-    console.log(`Command: ${command}`)
-    if (dsn) {
-      console.log(`DSN has been set.`)
-    }
-
-    const isYarn = isYarnRepo()
-
-    console.log(`Project is using ${isYarn ? 'yarn' : 'npm'}`)
-
-    await exec.exec(isYarn ? YARN_INSTALL_COMMAND : NPM_INSTALL_COMMAND, null, {
-      ignoreReturnCode: true,
-    })
-
-    return ExecScopeRun(command, apiEndpoint, apiKey, isYarn)
-  } catch (error) {
-    core.setFailed(error.message)
-  }
-}
-
-function ExecScopeRun(command = DEFAULT_COMMAND, apiEndpoint, apiKey, isYarn) {
-  return exec.exec(
-    `CI=true ${command}`,
-    isYarn ? DEFAULT_ARGUMENTS : ['--', ...DEFAULT_ARGUMENTS],
-    {
-      env: {
-        ...process.env,
-        SCOPE_API_ENDPOINT: apiEndpoint,
-        SCOPE_APIKEY: apiKey,
-        SCOPE_AUTO_INSTRUMENT: true,
-      },
-    }
-  )
-}
-
-run()
-
-
-/***/ }),
 
 /***/ 87:
 /***/ (function(module) {
@@ -144,51 +57,7 @@ module.exports = require("child_process");
 
 /***/ }),
 
-/***/ 423:
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const tr = __webpack_require__(855);
-/**
- * Exec a command.
- * Output will be streamed to the live console.
- * Returns promise with return code
- *
- * @param     commandLine        command to execute (can include additional args). Must be correctly escaped.
- * @param     args               optional arguments for tool. Escaping is handled by the lib.
- * @param     options            optional exec options.  See ExecOptions
- * @returns   Promise<number>    exit code
- */
-function exec(commandLine, args, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const commandArgs = tr.argStringToArray(commandLine);
-        if (commandArgs.length === 0) {
-            throw new Error(`Parameter 'commandLine' cannot be null or empty.`);
-        }
-        // Path to tool to execute should be first arg
-        const toolPath = commandArgs[0];
-        args = commandArgs.slice(1).concat(args || []);
-        const runner = new tr.ToolRunner(toolPath, args, options);
-        return runner.exec();
-    });
-}
-exports.exec = exec;
-//# sourceMappingURL=exec.js.map
-
-/***/ }),
-
-/***/ 438:
+/***/ 337:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
@@ -261,7 +130,7 @@ function escape(s) {
 
 /***/ }),
 
-/***/ 587:
+/***/ 586:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
@@ -276,7 +145,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const command_1 = __webpack_require__(438);
+const command_1 = __webpack_require__(337);
 const os = __webpack_require__(87);
 const path = __webpack_require__(622);
 /**
@@ -484,7 +353,130 @@ module.exports = require("fs");
 
 /***/ }),
 
-/***/ 855:
+/***/ 765:
+/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
+
+const core = __webpack_require__(586)
+const exec = __webpack_require__(831)
+const fs = __webpack_require__(747)
+
+const SCOPE_DSN = 'SCOPE_DSN'
+
+const DEFAULT_ARGUMENTS = [
+  '--testRunner=@undefinedlabs/scope-agent/jest/testRunner',
+  '--runner=@undefinedlabs/scope-agent/jest/runner',
+  '--setupFilesAfterEnv=@undefinedlabs/scope-agent/jest/setupTests',
+  '--runInBand',
+]
+
+const DEFAULT_COMMAND = 'npm test'
+
+const NPM_INSTALL_COMMAND = 'npm install --save-dev @undefinedlabs/scope-agent'
+const YARN_INSTALL_COMMAND = 'yarn add --dev @undefinedlabs/scope-agent'
+
+const isYarnRepo = () => fs.existsSync('yarn.lock')
+
+async function run() {
+  try {
+    const command = core.getInput('command') || DEFAULT_COMMAND
+    const dsn = core.getInput('dsn') || process.env[SCOPE_DSN]
+
+    if (!dsn) {
+      throw Error('Cannot find the Scope DSN')
+    }
+
+    let apiEndpoint, apiKey
+    try {
+      const { username, origin } = new URL(dsn)
+      apiEndpoint = origin
+      apiKey = username
+    } catch (e) {}
+
+    if (!apiEndpoint || !apiKey) {
+      throw Error('SCOPE_DSN does not have the correct format')
+    }
+
+    console.log(`Command: ${command}`)
+    if (dsn) {
+      console.log(`DSN has been set.`)
+    }
+
+    const isYarn = isYarnRepo()
+
+    console.log(`Project is using ${isYarn ? 'yarn' : 'npm'}`)
+
+    await exec.exec(isYarn ? YARN_INSTALL_COMMAND : NPM_INSTALL_COMMAND, null, {
+      ignoreReturnCode: true,
+    })
+
+    return ExecScopeRun(command, apiEndpoint, apiKey, isYarn)
+  } catch (error) {
+    core.setFailed(error.message)
+  }
+}
+
+function ExecScopeRun(command = DEFAULT_COMMAND, apiEndpoint, apiKey, isYarn) {
+  return exec.exec(command, isYarn ? DEFAULT_ARGUMENTS : ['--', ...DEFAULT_ARGUMENTS], {
+    env: {
+      ...process.env,
+      SCOPE_API_ENDPOINT: apiEndpoint,
+      SCOPE_APIKEY: apiKey,
+      SCOPE_AUTO_INSTRUMENT: true,
+      CI: true,
+    },
+  })
+}
+
+run()
+
+
+/***/ }),
+
+/***/ 831:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const tr = __webpack_require__(963);
+/**
+ * Exec a command.
+ * Output will be streamed to the live console.
+ * Returns promise with return code
+ *
+ * @param     commandLine        command to execute (can include additional args). Must be correctly escaped.
+ * @param     args               optional arguments for tool. Escaping is handled by the lib.
+ * @param     options            optional exec options.  See ExecOptions
+ * @returns   Promise<number>    exit code
+ */
+function exec(commandLine, args, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const commandArgs = tr.argStringToArray(commandLine);
+        if (commandArgs.length === 0) {
+            throw new Error(`Parameter 'commandLine' cannot be null or empty.`);
+        }
+        // Path to tool to execute should be first arg
+        const toolPath = commandArgs[0];
+        args = commandArgs.slice(1).concat(args || []);
+        const runner = new tr.ToolRunner(toolPath, args, options);
+        return runner.exec();
+    });
+}
+exports.exec = exec;
+//# sourceMappingURL=exec.js.map
+
+/***/ }),
+
+/***/ 963:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";

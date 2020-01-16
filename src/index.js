@@ -1,6 +1,5 @@
 const core = require('@actions/core')
 const exec = require('@actions/exec')
-const path = require('path')
 const fs = require('fs')
 
 const SCOPE_DSN = 'SCOPE_DSN'
@@ -17,11 +16,7 @@ const DEFAULT_COMMAND = 'npm test'
 const NPM_INSTALL_COMMAND = 'npm install --save-dev @undefinedlabs/scope-agent'
 const YARN_INSTALL_COMMAND = 'yarn add --dev @undefinedlabs/scope-agent'
 
-const isYarnRepo = (cwd = process.cwd()) => {
-  console.log('current directory', cwd)
-  console.log('yarn lock position', path.resolve(cwd, 'yarn.lock'))
-  return fs.existsSync(path.resolve(cwd, 'yarn.lock'))
-}
+const isYarnRepo = () => fs.existsSync('yarn.lock')
 
 async function run() {
   try {
@@ -63,18 +58,15 @@ async function run() {
 }
 
 function ExecScopeRun(command = DEFAULT_COMMAND, apiEndpoint, apiKey, isYarn) {
-  return exec.exec(
-    `CI=true ${command}`,
-    isYarn ? DEFAULT_ARGUMENTS : ['--', ...DEFAULT_ARGUMENTS],
-    {
-      env: {
-        ...process.env,
-        SCOPE_API_ENDPOINT: apiEndpoint,
-        SCOPE_APIKEY: apiKey,
-        SCOPE_AUTO_INSTRUMENT: true,
-      },
-    }
-  )
+  return exec.exec(command, isYarn ? DEFAULT_ARGUMENTS : ['--', ...DEFAULT_ARGUMENTS], {
+    env: {
+      ...process.env,
+      SCOPE_API_ENDPOINT: apiEndpoint,
+      SCOPE_APIKEY: apiKey,
+      SCOPE_AUTO_INSTRUMENT: true,
+      CI: true,
+    },
+  })
 }
 
 run()
