@@ -11,8 +11,8 @@ const DEFAULT_ARGUMENTS = [
   '--runInBand',
 ]
 
-const CYPRESS_SUPPORT_FILE = 'cypress/support/index.js'
-const CYPRESS_PLUGIN_FILE = 'cypress/plugins/index.js'
+const CYPRESS_SUPPORT_FILE = 'SCOPE_supportIndex.js'
+const CYPRESS_PLUGIN_FILE = 'SCOPE_pluginIndex.js'
 
 const DEFAULT_CYPRESS_ARGUMENTS = [
   '--config',
