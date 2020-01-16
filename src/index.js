@@ -6,11 +6,11 @@ const fs = require('fs')
 const SCOPE_DSN = 'SCOPE_DSN'
 
 const DEFAULT_ARGUMENTS = [
-  '--',
   '--testRunner=@undefinedlabs/scope-agent/jest/testRunner',
   '--runner=@undefinedlabs/scope-agent/jest/runner',
   '--setupFilesAfterEnv=@undefinedlabs/scope-agent/jest/setupTests',
   '--runInBand',
+  '--ci',
 ]
 
 const DEFAULT_COMMAND = 'npm test'
@@ -18,7 +18,7 @@ const DEFAULT_COMMAND = 'npm test'
 const NPM_INSTALL_COMMAND = 'npm install --save-dev @undefinedlabs/scope-agent'
 const YARN_INSTALL_COMMAND = 'yarn add --dev @undefinedlabs/scope-agent'
 
-const hasYarn = (cwd = process.cwd()) => fs.existsSync(path.resolve(cwd, 'yarn.lock'))
+const isYarnRepo = (cwd = process.cwd()) => fs.existsSync(path.resolve(cwd, 'yarn.lock'))
 
 async function run() {
   try {
@@ -45,20 +45,20 @@ async function run() {
       console.log(`DSN has been set.`)
     }
 
-    const installCommand = hasYarn() ? YARN_INSTALL_COMMAND : NPM_INSTALL_COMMAND
+    const isYarn = isYarnRepo()
 
-    await exec.exec(installCommand, null, {
+    await exec.exec(isYarn ? YARN_INSTALL_COMMAND : NPM_INSTALL_COMMAND, null, {
       ignoreReturnCode: true,
     })
 
-    return ExecScopeRun(command, apiEndpoint, apiKey)
+    return ExecScopeRun(command, apiEndpoint, apiKey, isYarn)
   } catch (error) {
     core.setFailed(error.message)
   }
 }
 
-function ExecScopeRun(command = DEFAULT_COMMAND, apiEndpoint, apiKey) {
-  return exec.exec(command, DEFAULT_ARGUMENTS, {
+function ExecScopeRun(command = DEFAULT_COMMAND, apiEndpoint, apiKey, isYarn) {
+  return exec.exec(command, isYarn ? DEFAULT_ARGUMENTS : ['--', ...DEFAULT_ARGUMENTS], {
     env: {
       ...process.env,
       SCOPE_API_ENDPOINT: apiEndpoint,
