@@ -16,13 +16,13 @@ const JEST_DEFAULT_ARGUMENTS = [
 const NPM_DEFAULT_TEST_COMMAND = 'npm test'
 const YARN_DEFAULT_TEST_COMMAND = 'yarn test'
 
+const CYPRESS_SUPPORT_FILE = 'SCOPE_supportIndex.js'
+const CYPRESS_PLUGIN_FILE = 'SCOPE_pluginIndex.js'
+const DEFAULT_CYPRESS_ENDPOINT = 'http://localhost:3000'
 const CYPRESS_DEFAULT_ARGUMENTS = [
   '--config',
   `supportFile=${CYPRESS_SUPPORT_FILE},pluginsFile=${CYPRESS_PLUGIN_FILE}`,
 ]
-const CYPRESS_SUPPORT_FILE = 'SCOPE_supportIndex.js'
-const CYPRESS_PLUGIN_FILE = 'SCOPE_pluginIndex.js'
-const DEFAULT_CYPRESS_ENDPOINT = 'http://localhost:3000'
 
 const isYarnRepo = () => fs.existsSync('yarn.lock')
 
