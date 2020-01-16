@@ -47,6 +47,8 @@ async function run() {
 
     const isYarn = isYarnRepo()
 
+    console.log(`Project is using ${isYarn ? 'yarn' : 'npm'}`)
+
     await exec.exec(isYarn ? YARN_INSTALL_COMMAND : NPM_INSTALL_COMMAND, null, {
       ignoreReturnCode: true,
     })
