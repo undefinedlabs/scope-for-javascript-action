@@ -34,7 +34,7 @@ module.exports =
 /******/ 	// the startup function
 /******/ 	function startup() {
 /******/ 		// Load entry module and return exports
-/******/ 		return __webpack_require__(876);
+/******/ 		return __webpack_require__(74);
 /******/ 	};
 /******/
 /******/ 	// run startup
@@ -43,6 +43,93 @@ module.exports =
 /************************************************************************/
 /******/ ({
 
+/***/ 74:
+/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
+
+const core = __webpack_require__(587)
+const exec = __webpack_require__(423)
+const path = __webpack_require__(622)
+const fs = __webpack_require__(747)
+
+const SCOPE_DSN = 'SCOPE_DSN'
+
+const DEFAULT_ARGUMENTS = [
+  '--testRunner=@undefinedlabs/scope-agent/jest/testRunner',
+  '--runner=@undefinedlabs/scope-agent/jest/runner',
+  '--setupFilesAfterEnv=@undefinedlabs/scope-agent/jest/setupTests',
+  '--runInBand',
+]
+
+const DEFAULT_COMMAND = 'npm test'
+
+const NPM_INSTALL_COMMAND = 'npm install --save-dev @undefinedlabs/scope-agent'
+const YARN_INSTALL_COMMAND = 'yarn add --dev @undefinedlabs/scope-agent'
+
+const isYarnRepo = (cwd = process.cwd()) => {
+  console.log('current directory', cwd)
+  console.log('yarn lock position', __webpack_require__.ab + "scope-for-javascript-action/" + cwd + '/yarn.lock')
+  return fs.existsSync(__webpack_require__.ab + "scope-for-javascript-action/" + cwd + '/yarn.lock')
+}
+
+async function run() {
+  try {
+    const command = core.getInput('command') || DEFAULT_COMMAND
+    const dsn = core.getInput('dsn') || process.env[SCOPE_DSN]
+
+    if (!dsn) {
+      throw Error('Cannot find the Scope DSN')
+    }
+
+    let apiEndpoint, apiKey
+    try {
+      const { username, origin } = new URL(dsn)
+      apiEndpoint = origin
+      apiKey = username
+    } catch (e) {}
+
+    if (!apiEndpoint || !apiKey) {
+      throw Error('SCOPE_DSN does not have the correct format')
+    }
+
+    console.log(`Command: ${command}`)
+    if (dsn) {
+      console.log(`DSN has been set.`)
+    }
+
+    const isYarn = isYarnRepo()
+
+    console.log(`Project is using ${isYarn ? 'yarn' : 'npm'}`)
+
+    await exec.exec(isYarn ? YARN_INSTALL_COMMAND : NPM_INSTALL_COMMAND, null, {
+      ignoreReturnCode: true,
+    })
+
+    return ExecScopeRun(command, apiEndpoint, apiKey, isYarn)
+  } catch (error) {
+    core.setFailed(error.message)
+  }
+}
+
+function ExecScopeRun(command = DEFAULT_COMMAND, apiEndpoint, apiKey, isYarn) {
+  return exec.exec(
+    `CI=true ${command}`,
+    isYarn ? DEFAULT_ARGUMENTS : ['--', ...DEFAULT_ARGUMENTS],
+    {
+      env: {
+        ...process.env,
+        SCOPE_API_ENDPOINT: apiEndpoint,
+        SCOPE_APIKEY: apiKey,
+        SCOPE_AUTO_INSTRUMENT: true,
+      },
+    }
+  )
+}
+
+run()
+
+
+/***/ }),
+
 /***/ 87:
 /***/ (function(module) {
 
@@ -50,7 +137,14 @@ module.exports = require("os");
 
 /***/ }),
 
-/***/ 89:
+/***/ 129:
+/***/ (function(module) {
+
+module.exports = require("child_process");
+
+/***/ }),
+
+/***/ 423:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
@@ -65,7 +159,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const tr = __webpack_require__(233);
+const tr = __webpack_require__(855);
 /**
  * Exec a command.
  * Output will be streamed to the live console.
@@ -94,14 +188,80 @@ exports.exec = exec;
 
 /***/ }),
 
-/***/ 129:
-/***/ (function(module) {
+/***/ 438:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
-module.exports = require("child_process");
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const os = __webpack_require__(87);
+/**
+ * Commands
+ *
+ * Command Format:
+ *   ##[name key=value;key=value]message
+ *
+ * Examples:
+ *   ##[warning]This is the user warning message
+ *   ##[set-secret name=mypassword]definitelyNotAPassword!
+ */
+function issueCommand(command, properties, message) {
+    const cmd = new Command(command, properties, message);
+    process.stdout.write(cmd.toString() + os.EOL);
+}
+exports.issueCommand = issueCommand;
+function issue(name, message = '') {
+    issueCommand(name, {}, message);
+}
+exports.issue = issue;
+const CMD_STRING = '::';
+class Command {
+    constructor(command, properties, message) {
+        if (!command) {
+            command = 'missing.command';
+        }
+        this.command = command;
+        this.properties = properties;
+        this.message = message;
+    }
+    toString() {
+        let cmdStr = CMD_STRING + this.command;
+        if (this.properties && Object.keys(this.properties).length > 0) {
+            cmdStr += ' ';
+            for (const key in this.properties) {
+                if (this.properties.hasOwnProperty(key)) {
+                    const val = this.properties[key];
+                    if (val) {
+                        // safely append the val - avoid blowing up when attempting to
+                        // call .replace() if message is not a string for some reason
+                        cmdStr += `${key}=${escape(`${val || ''}`)},`;
+                    }
+                }
+            }
+        }
+        cmdStr += CMD_STRING;
+        // safely append the message - avoid blowing up when attempting to
+        // call .replace() if message is not a string for some reason
+        const message = `${this.message || ''}`;
+        cmdStr += escapeData(message);
+        return cmdStr;
+    }
+}
+function escapeData(s) {
+    return s.replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+}
+function escape(s) {
+    return s
+        .replace(/\r/g, '%0D')
+        .replace(/\n/g, '%0A')
+        .replace(/]/g, '%5D')
+        .replace(/;/g, '%3B');
+}
+//# sourceMappingURL=command.js.map
 
 /***/ }),
 
-/***/ 225:
+/***/ 587:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
@@ -116,7 +276,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const command_1 = __webpack_require__(466);
+const command_1 = __webpack_require__(438);
 const os = __webpack_require__(87);
 const path = __webpack_require__(622);
 /**
@@ -303,7 +463,28 @@ exports.getState = getState;
 
 /***/ }),
 
-/***/ 233:
+/***/ 614:
+/***/ (function(module) {
+
+module.exports = require("events");
+
+/***/ }),
+
+/***/ 622:
+/***/ (function(module) {
+
+module.exports = require("path");
+
+/***/ }),
+
+/***/ 747:
+/***/ (function(module) {
+
+module.exports = require("fs");
+
+/***/ }),
+
+/***/ 855:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
@@ -881,180 +1062,6 @@ class ExecState extends events.EventEmitter {
     }
 }
 //# sourceMappingURL=toolrunner.js.map
-
-/***/ }),
-
-/***/ 466:
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const os = __webpack_require__(87);
-/**
- * Commands
- *
- * Command Format:
- *   ##[name key=value;key=value]message
- *
- * Examples:
- *   ##[warning]This is the user warning message
- *   ##[set-secret name=mypassword]definitelyNotAPassword!
- */
-function issueCommand(command, properties, message) {
-    const cmd = new Command(command, properties, message);
-    process.stdout.write(cmd.toString() + os.EOL);
-}
-exports.issueCommand = issueCommand;
-function issue(name, message = '') {
-    issueCommand(name, {}, message);
-}
-exports.issue = issue;
-const CMD_STRING = '::';
-class Command {
-    constructor(command, properties, message) {
-        if (!command) {
-            command = 'missing.command';
-        }
-        this.command = command;
-        this.properties = properties;
-        this.message = message;
-    }
-    toString() {
-        let cmdStr = CMD_STRING + this.command;
-        if (this.properties && Object.keys(this.properties).length > 0) {
-            cmdStr += ' ';
-            for (const key in this.properties) {
-                if (this.properties.hasOwnProperty(key)) {
-                    const val = this.properties[key];
-                    if (val) {
-                        // safely append the val - avoid blowing up when attempting to
-                        // call .replace() if message is not a string for some reason
-                        cmdStr += `${key}=${escape(`${val || ''}`)},`;
-                    }
-                }
-            }
-        }
-        cmdStr += CMD_STRING;
-        // safely append the message - avoid blowing up when attempting to
-        // call .replace() if message is not a string for some reason
-        const message = `${this.message || ''}`;
-        cmdStr += escapeData(message);
-        return cmdStr;
-    }
-}
-function escapeData(s) {
-    return s.replace(/\r/g, '%0D').replace(/\n/g, '%0A');
-}
-function escape(s) {
-    return s
-        .replace(/\r/g, '%0D')
-        .replace(/\n/g, '%0A')
-        .replace(/]/g, '%5D')
-        .replace(/;/g, '%3B');
-}
-//# sourceMappingURL=command.js.map
-
-/***/ }),
-
-/***/ 614:
-/***/ (function(module) {
-
-module.exports = require("events");
-
-/***/ }),
-
-/***/ 622:
-/***/ (function(module) {
-
-module.exports = require("path");
-
-/***/ }),
-
-/***/ 747:
-/***/ (function(module) {
-
-module.exports = require("fs");
-
-/***/ }),
-
-/***/ 876:
-/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
-
-const core = __webpack_require__(225)
-const exec = __webpack_require__(89)
-const path = __webpack_require__(622)
-const fs = __webpack_require__(747)
-
-const SCOPE_DSN = 'SCOPE_DSN'
-
-const DEFAULT_ARGUMENTS = [
-  '--testRunner=@undefinedlabs/scope-agent/jest/testRunner',
-  '--runner=@undefinedlabs/scope-agent/jest/runner',
-  '--setupFilesAfterEnv=@undefinedlabs/scope-agent/jest/setupTests',
-  '--runInBand',
-  '--ci',
-]
-
-const DEFAULT_COMMAND = 'npm test'
-
-const NPM_INSTALL_COMMAND = 'npm install --save-dev @undefinedlabs/scope-agent'
-const YARN_INSTALL_COMMAND = 'yarn add --dev @undefinedlabs/scope-agent'
-
-const isYarnRepo = (cwd = process.cwd()) => fs.existsSync(__webpack_require__.ab + "scope-for-javascript-action/" + cwd + '/yarn.lock')
-
-async function run() {
-  try {
-    const command = core.getInput('command') || DEFAULT_COMMAND
-    const dsn = core.getInput('dsn') || process.env[SCOPE_DSN]
-
-    if (!dsn) {
-      throw Error('Cannot find the Scope DSN')
-    }
-
-    let apiEndpoint, apiKey
-    try {
-      const { username, origin } = new URL(dsn)
-      apiEndpoint = origin
-      apiKey = username
-    } catch (e) {}
-
-    if (!apiEndpoint || !apiKey) {
-      throw Error('SCOPE_DSN does not have the correct format')
-    }
-
-    console.log(`Command: ${command}`)
-    if (dsn) {
-      console.log(`DSN has been set.`)
-    }
-
-    const isYarn = isYarnRepo()
-
-    console.log(`Project is using ${isYarn ? 'yarn' : 'npm'}`)
-
-    await exec.exec(isYarn ? YARN_INSTALL_COMMAND : NPM_INSTALL_COMMAND, null, {
-      ignoreReturnCode: true,
-    })
-
-    return ExecScopeRun(command, apiEndpoint, apiKey, isYarn)
-  } catch (error) {
-    core.setFailed(error.message)
-  }
-}
-
-function ExecScopeRun(command = DEFAULT_COMMAND, apiEndpoint, apiKey, isYarn) {
-  return exec.exec(command, isYarn ? DEFAULT_ARGUMENTS : ['--', ...DEFAULT_ARGUMENTS], {
-    env: {
-      ...process.env,
-      SCOPE_API_ENDPOINT: apiEndpoint,
-      SCOPE_APIKEY: apiKey,
-      SCOPE_AUTO_INSTRUMENT: true,
-    },
-  })
-}
-
-run()
-
 
 /***/ })
 
