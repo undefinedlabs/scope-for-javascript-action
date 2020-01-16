@@ -12,6 +12,7 @@ inputs:
   cypress-endpoint:
     description: 'URL to run the cypress tests against.'
     required: false
+    default: 'http://localhost:3000'
   dsn:
     description: 'Scope DSN'
     required: true
