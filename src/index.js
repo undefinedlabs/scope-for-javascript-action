@@ -67,7 +67,7 @@ async function run() {
     })
 
     // jest tests
-    ExecJestTests(command, apiEndpoint, apiKey, isYarn)
+    await ExecJestTests(command, apiEndpoint, apiKey, isYarn)
 
     // cypress tests
     if (cypressCommand) {
