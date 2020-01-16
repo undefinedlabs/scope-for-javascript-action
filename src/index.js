@@ -1,5 +1,7 @@
 const core = require('@actions/core')
 const exec = require('@actions/exec')
+const path = require('path')
+const fs = require('fs')
 
 const SCOPE_DSN = 'SCOPE_DSN'
 
@@ -8,9 +10,15 @@ const DEFAULT_ARGUMENTS = [
   '--testRunner=@undefinedlabs/scope-agent/jest/testRunner',
   '--runner=@undefinedlabs/scope-agent/jest/runner',
   '--setupFilesAfterEnv=@undefinedlabs/scope-agent/jest/setupTests',
+  '--runInBand',
 ]
 
 const DEFAULT_COMMAND = 'npm test'
+
+const NPM_INSTALL_COMMAND = 'npm install --save-dev @undefinedlabs/scope-agent'
+const YARN_INSTALL_COMMAND = 'yarn add --dev @undefinedlabs/scope-agent'
+
+const hasYarn = (cwd = process.cwd()) => fs.existsSync(path.resolve(cwd, 'yarn.lock'))
 
 async function run() {
   try {
@@ -37,7 +45,9 @@ async function run() {
       console.log(`DSN has been set.`)
     }
 
-    await exec.exec('npm install --save-dev @undefinedlabs/scope-agent', null, {
+    const installCommand = hasYarn() ? YARN_INSTALL_COMMAND : NPM_INSTALL_COMMAND
+
+    await exec.exec(installCommand, null, {
       ignoreReturnCode: true,
     })
 

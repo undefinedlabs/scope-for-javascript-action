@@ -1,11 +1,17 @@
 name: 'Scope for Javascript'
 author: 'Undefined Labs'
-description: 'Automatically instruments and runs your tests using the Scope Javascript agent'
+description: 'Automatically instruments and runs your tests using the Scope Javascript agent.'
 inputs:
   command:
-    description: 'Command to run your tests'
+    description: 'Command to run your tests.'
     required: false
     default: 'npm test'
+  command-cypress:
+    description: 'Command to run your cypress tests.'
+    required: false
+  cypress-endpoint:
+    description: 'URL to run the cypress tests against.'
+    required: false
   dsn:
     description: 'Scope DSN'
     required: true
