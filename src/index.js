@@ -5,9 +5,9 @@ const SCOPE_DSN = 'SCOPE_DSN'
 
 const DEFAULT_ARGUMENTS = [
   '--',
-  '--testRunner=@undefinedlabs/scope-agent/jestTestRunner',
-  '--runner=@undefinedlabs/scope-agent/jestRunner',
-  '--setupFilesAfterEnv=@undefinedlabs/scope-agent/jestSetupTests',
+  '--testRunner=@undefinedlabs/scope-agent/jest/testRunner',
+  '--runner=@undefinedlabs/scope-agent/jest/runner',
+  '--setupFilesAfterEnv=@undefinedlabs/scope-agent/jest/setupTests',
 ]
 
 const DEFAULT_COMMAND = 'npm test'
