@@ -65,7 +65,7 @@ async function run() {
     })
 
     // jest tests
-    await runTests(
+    runTests(
       command,
       isYarn ? JEST_DEFAULT_ARGUMENTS : ['--', ...JEST_DEFAULT_ARGUMENTS],
       apiEndpoint,
