@@ -2,11 +2,11 @@ name: 'Scope for Javascript'
 author: 'Undefined Labs'
 description: 'Automatically instruments and runs your tests using the Scope Javascript agent.'
 inputs:
-  command:
-    description: 'Command to run your tests.'
+  jest-command:
+    description: 'Command to run your jest tests.'
     required: false
     default: 'npm test'
-  command-cypress:
+  cypress-command:
     description: 'Command to run your cypress tests.'
     required: false
   cypress-endpoint:

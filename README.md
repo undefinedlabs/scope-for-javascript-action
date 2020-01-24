@@ -28,7 +28,7 @@ steps:
     uses: undefinedlabs/scope-for-javascript-action@v1
     with:
       dsn: ${{secrets.SCOPE_DSN}} # required
-      command: npm test # optional - default is 'npm test'
-      command-cypress: npm run cypress:run # optional - command to run cypress tests if your repository includes them
+      jest-command: npm test # optional - default is 'npm test'
+      cypress-command: npm run cypress:run # optional - command to run cypress tests if your repository includes them
       cypress-endpoint: http://localhost:3000 # optional - URL to run the cypress tests against
 ```
