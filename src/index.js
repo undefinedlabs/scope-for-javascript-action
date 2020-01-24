@@ -39,9 +39,9 @@ async function run() {
 
     const defaultTestCommand = isYarn ? YARN_DEFAULT_TEST_COMMAND : NPM_DEFAULT_TEST_COMMAND
 
-    const command = core.getInput('command') || defaultTestCommand
+    const command = core.getInput('jest-command') || defaultTestCommand
 
-    const cypressCommand = core.getInput('command-cypress')
+    const cypressCommand = core.getInput('cypress-command')
     const cypressEndpoint = core.getInput('cypress-endpoint') || DEFAULT_CYPRESS_ENDPOINT
 
     let apiEndpoint, apiKey
