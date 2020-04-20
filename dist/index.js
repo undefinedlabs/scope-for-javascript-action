@@ -34,7 +34,7 @@ module.exports =
 /******/ 	// the startup function
 /******/ 	function startup() {
 /******/ 		// Load entry module and return exports
-/******/ 		return __webpack_require__(758);
+/******/ 		return __webpack_require__(108);
 /******/ 	};
 /******/
 /******/ 	// run startup
@@ -43,7 +43,129 @@ module.exports =
 /************************************************************************/
 /******/ ({
 
-/***/ 34:
+/***/ 87:
+/***/ (function(module) {
+
+module.exports = require("os");
+
+/***/ }),
+
+/***/ 108:
+/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
+
+const core = __webpack_require__(916)
+const exec = __webpack_require__(425)
+const fs = __webpack_require__(747)
+
+const SCOPE_DSN = 'SCOPE_DSN'
+
+const NPM_INSTALL_COMMAND = 'npm install --save-dev @undefinedlabs/scope-agent'
+const YARN_INSTALL_COMMAND = 'yarn add --dev @undefinedlabs/scope-agent'
+
+const JEST_DEFAULT_ARGUMENTS = [
+  '--testRunner=@undefinedlabs/scope-agent/jest/testRunner',
+  '--globalSetup=@undefinedlabs/scope-agent/jest/globalSetup',
+  '--setupFilesAfterEnv=@undefinedlabs/scope-agent/jest/setupTests',
+]
+const NPM_DEFAULT_TEST_COMMAND = 'npm test'
+const YARN_DEFAULT_TEST_COMMAND = 'yarn test'
+
+const CYPRESS_SUPPORT_FILE = 'SCOPE_supportIndex.js'
+const CYPRESS_PLUGIN_FILE = 'SCOPE_pluginIndex.js'
+const DEFAULT_CYPRESS_ENDPOINT = 'http://localhost:3000'
+const CYPRESS_DEFAULT_ARGUMENTS = [
+  '--config',
+  `supportFile=${CYPRESS_SUPPORT_FILE},pluginsFile=${CYPRESS_PLUGIN_FILE}`,
+]
+
+const isYarnRepo = () => fs.existsSync('yarn.lock')
+
+async function run() {
+  try {
+    const dsn = core.getInput('dsn') || process.env[SCOPE_DSN]
+
+    if (!dsn) {
+      throw Error('Cannot find the Scope DSN')
+    }
+
+    const isYarn = isYarnRepo()
+    console.log(`Project is using ${isYarn ? 'yarn' : 'npm'}`)
+
+    const defaultTestCommand = isYarn ? YARN_DEFAULT_TEST_COMMAND : NPM_DEFAULT_TEST_COMMAND
+
+    const command = core.getInput('jest-command') || defaultTestCommand
+
+    const cypressCommand = core.getInput('cypress-command')
+    const cypressEndpoint = core.getInput('cypress-endpoint') || DEFAULT_CYPRESS_ENDPOINT
+
+    console.log(`Command: ${command}`)
+    if (dsn) {
+      console.log(`DSN has been set.`)
+    }
+
+    await exec.exec(isYarn ? YARN_INSTALL_COMMAND : NPM_INSTALL_COMMAND, null, {
+      ignoreReturnCode: true,
+    })
+
+    // Jest tests
+    runTests(command, isYarn ? JEST_DEFAULT_ARGUMENTS : ['--', ...JEST_DEFAULT_ARGUMENTS], dsn)
+
+    // Cypress tests
+    if (cypressCommand) {
+      fs.writeFileSync(
+        CYPRESS_SUPPORT_FILE,
+        'require("@undefinedlabs/scope-agent/cypress/support")'
+      )
+      fs.writeFileSync(
+        CYPRESS_PLUGIN_FILE,
+        `
+        const { initCypressPlugin } = require("@undefinedlabs/scope-agent/cypress/plugin");
+        
+        module.exports = async (on, config) => {
+          const newConfig = await initCypressPlugin(on, config);
+          return newConfig;
+        };
+      `
+      )
+      runTests(
+        cypressCommand,
+        isYarn ? CYPRESS_DEFAULT_ARGUMENTS : ['--', ...CYPRESS_DEFAULT_ARGUMENTS],
+        dsn,
+        {
+          CYPRESS_baseUrl: cypressEndpoint,
+        }
+      )
+    }
+  } catch (error) {
+    core.setFailed(error.message)
+  }
+}
+
+function runTests(command, defaultArguments, dsn, extraEnvVariables = {}) {
+  return exec.exec(command, defaultArguments, {
+    env: {
+      ...process.env,
+      SCOPE_DSN: dsn,
+      SCOPE_INSTRUMENTATION_ENABLED: true,
+      CI: true,
+      ...extraEnvVariables,
+    },
+  })
+}
+
+run()
+
+
+/***/ }),
+
+/***/ 129:
+/***/ (function(module) {
+
+module.exports = require("child_process");
+
+/***/ }),
+
+/***/ 425:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
@@ -58,7 +180,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const tr = __webpack_require__(55);
+const tr = __webpack_require__(908);
 /**
  * Exec a command.
  * Output will be streamed to the live console.
@@ -87,7 +209,28 @@ exports.exec = exec;
 
 /***/ }),
 
-/***/ 55:
+/***/ 614:
+/***/ (function(module) {
+
+module.exports = require("events");
+
+/***/ }),
+
+/***/ 622:
+/***/ (function(module) {
+
+module.exports = require("path");
+
+/***/ }),
+
+/***/ 747:
+/***/ (function(module) {
+
+module.exports = require("fs");
+
+/***/ }),
+
+/***/ 908:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
@@ -668,94 +811,7 @@ class ExecState extends events.EventEmitter {
 
 /***/ }),
 
-/***/ 87:
-/***/ (function(module) {
-
-module.exports = require("os");
-
-/***/ }),
-
-/***/ 129:
-/***/ (function(module) {
-
-module.exports = require("child_process");
-
-/***/ }),
-
-/***/ 327:
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const os = __webpack_require__(87);
-/**
- * Commands
- *
- * Command Format:
- *   ##[name key=value;key=value]message
- *
- * Examples:
- *   ##[warning]This is the user warning message
- *   ##[set-secret name=mypassword]definitelyNotAPassword!
- */
-function issueCommand(command, properties, message) {
-    const cmd = new Command(command, properties, message);
-    process.stdout.write(cmd.toString() + os.EOL);
-}
-exports.issueCommand = issueCommand;
-function issue(name, message = '') {
-    issueCommand(name, {}, message);
-}
-exports.issue = issue;
-const CMD_STRING = '::';
-class Command {
-    constructor(command, properties, message) {
-        if (!command) {
-            command = 'missing.command';
-        }
-        this.command = command;
-        this.properties = properties;
-        this.message = message;
-    }
-    toString() {
-        let cmdStr = CMD_STRING + this.command;
-        if (this.properties && Object.keys(this.properties).length > 0) {
-            cmdStr += ' ';
-            for (const key in this.properties) {
-                if (this.properties.hasOwnProperty(key)) {
-                    const val = this.properties[key];
-                    if (val) {
-                        // safely append the val - avoid blowing up when attempting to
-                        // call .replace() if message is not a string for some reason
-                        cmdStr += `${key}=${escape(`${val || ''}`)},`;
-                    }
-                }
-            }
-        }
-        cmdStr += CMD_STRING;
-        // safely append the message - avoid blowing up when attempting to
-        // call .replace() if message is not a string for some reason
-        const message = `${this.message || ''}`;
-        cmdStr += escapeData(message);
-        return cmdStr;
-    }
-}
-function escapeData(s) {
-    return s.replace(/\r/g, '%0D').replace(/\n/g, '%0A');
-}
-function escape(s) {
-    return s
-        .replace(/\r/g, '%0D')
-        .replace(/\n/g, '%0A')
-        .replace(/]/g, '%5D')
-        .replace(/;/g, '%3B');
-}
-//# sourceMappingURL=command.js.map
-
-/***/ }),
-
-/***/ 461:
+/***/ 916:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
@@ -770,7 +826,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const command_1 = __webpack_require__(327);
+const command_1 = __webpack_require__(921);
 const os = __webpack_require__(87);
 const path = __webpack_require__(622);
 /**
@@ -957,150 +1013,76 @@ exports.getState = getState;
 
 /***/ }),
 
-/***/ 614:
-/***/ (function(module) {
+/***/ 921:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
-module.exports = require("events");
+"use strict";
 
-/***/ }),
-
-/***/ 622:
-/***/ (function(module) {
-
-module.exports = require("path");
-
-/***/ }),
-
-/***/ 747:
-/***/ (function(module) {
-
-module.exports = require("fs");
-
-/***/ }),
-
-/***/ 758:
-/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
-
-const core = __webpack_require__(461)
-const exec = __webpack_require__(34)
-const fs = __webpack_require__(747)
-
-const SCOPE_DSN = 'SCOPE_DSN'
-
-const NPM_INSTALL_COMMAND = 'npm install --save-dev @undefinedlabs/scope-agent'
-const YARN_INSTALL_COMMAND = 'yarn add --dev @undefinedlabs/scope-agent'
-
-const JEST_DEFAULT_ARGUMENTS = [
-  '--testRunner=@undefinedlabs/scope-agent/jest/testRunner',
-  '--globalSetup=@undefinedlabs/scope-agent/jest/globalSetup',
-  '--setupFilesAfterEnv=@undefinedlabs/scope-agent/jest/setupTests',
-]
-const NPM_DEFAULT_TEST_COMMAND = 'npm test'
-const YARN_DEFAULT_TEST_COMMAND = 'yarn test'
-
-const CYPRESS_SUPPORT_FILE = 'SCOPE_supportIndex.js'
-const CYPRESS_PLUGIN_FILE = 'SCOPE_pluginIndex.js'
-const DEFAULT_CYPRESS_ENDPOINT = 'http://localhost:3000'
-const CYPRESS_DEFAULT_ARGUMENTS = [
-  '--config',
-  `supportFile=${CYPRESS_SUPPORT_FILE},pluginsFile=${CYPRESS_PLUGIN_FILE}`,
-]
-
-const isYarnRepo = () => fs.existsSync('yarn.lock')
-
-async function run() {
-  try {
-    const dsn = core.getInput('dsn') || process.env[SCOPE_DSN]
-
-    if (!dsn) {
-      throw Error('Cannot find the Scope DSN')
-    }
-
-    const isYarn = isYarnRepo()
-    console.log(`Project is using ${isYarn ? 'yarn' : 'npm'}`)
-
-    const defaultTestCommand = isYarn ? YARN_DEFAULT_TEST_COMMAND : NPM_DEFAULT_TEST_COMMAND
-
-    const command = core.getInput('jest-command') || defaultTestCommand
-
-    const cypressCommand = core.getInput('cypress-command')
-    const cypressEndpoint = core.getInput('cypress-endpoint') || DEFAULT_CYPRESS_ENDPOINT
-
-    let apiEndpoint, apiKey
-    try {
-      const { username, origin } = new URL(dsn)
-      apiEndpoint = origin
-      apiKey = username
-    } catch (e) {}
-
-    if (!apiEndpoint || !apiKey) {
-      throw Error('SCOPE_DSN does not have the correct format')
-    }
-
-    console.log(`Command: ${command}`)
-    if (dsn) {
-      console.log(`DSN has been set.`)
-    }
-
-    await exec.exec(isYarn ? YARN_INSTALL_COMMAND : NPM_INSTALL_COMMAND, null, {
-      ignoreReturnCode: true,
-    })
-
-    // jest tests
-    runTests(
-      command,
-      isYarn ? JEST_DEFAULT_ARGUMENTS : ['--', ...JEST_DEFAULT_ARGUMENTS],
-      apiEndpoint,
-      apiKey
-    )
-
-    // cypress tests
-    if (cypressCommand) {
-      fs.writeFileSync(
-        CYPRESS_SUPPORT_FILE,
-        'require("@undefinedlabs/scope-agent/cypress/support")'
-      )
-      fs.writeFileSync(
-        CYPRESS_PLUGIN_FILE,
-        `
-        const { initCypressPlugin } = require("@undefinedlabs/scope-agent/cypress/plugin");
-        
-        module.exports = async (on, config) => {
-          const newConfig = await initCypressPlugin(on, config);
-          return newConfig;
-        };
-      `
-      )
-      runTests(
-        cypressCommand,
-        isYarn ? CYPRESS_DEFAULT_ARGUMENTS : ['--', ...CYPRESS_DEFAULT_ARGUMENTS],
-        apiEndpoint,
-        apiKey,
-        {
-          CYPRESS_baseUrl: cypressEndpoint,
+Object.defineProperty(exports, "__esModule", { value: true });
+const os = __webpack_require__(87);
+/**
+ * Commands
+ *
+ * Command Format:
+ *   ##[name key=value;key=value]message
+ *
+ * Examples:
+ *   ##[warning]This is the user warning message
+ *   ##[set-secret name=mypassword]definitelyNotAPassword!
+ */
+function issueCommand(command, properties, message) {
+    const cmd = new Command(command, properties, message);
+    process.stdout.write(cmd.toString() + os.EOL);
+}
+exports.issueCommand = issueCommand;
+function issue(name, message = '') {
+    issueCommand(name, {}, message);
+}
+exports.issue = issue;
+const CMD_STRING = '::';
+class Command {
+    constructor(command, properties, message) {
+        if (!command) {
+            command = 'missing.command';
         }
-      )
+        this.command = command;
+        this.properties = properties;
+        this.message = message;
     }
-  } catch (error) {
-    core.setFailed(error.message)
-  }
+    toString() {
+        let cmdStr = CMD_STRING + this.command;
+        if (this.properties && Object.keys(this.properties).length > 0) {
+            cmdStr += ' ';
+            for (const key in this.properties) {
+                if (this.properties.hasOwnProperty(key)) {
+                    const val = this.properties[key];
+                    if (val) {
+                        // safely append the val - avoid blowing up when attempting to
+                        // call .replace() if message is not a string for some reason
+                        cmdStr += `${key}=${escape(`${val || ''}`)},`;
+                    }
+                }
+            }
+        }
+        cmdStr += CMD_STRING;
+        // safely append the message - avoid blowing up when attempting to
+        // call .replace() if message is not a string for some reason
+        const message = `${this.message || ''}`;
+        cmdStr += escapeData(message);
+        return cmdStr;
+    }
 }
-
-function runTests(command, defaultArguments, apiEndpoint, apiKey, extraEnvVariables = {}) {
-  return exec.exec(command, defaultArguments, {
-    env: {
-      ...process.env,
-      SCOPE_API_ENDPOINT: apiEndpoint,
-      SCOPE_APIKEY: apiKey,
-      SCOPE_INSTRUMENTATION_ENABLED: true,
-      CI: true,
-      ...extraEnvVariables,
-    },
-  })
+function escapeData(s) {
+    return s.replace(/\r/g, '%0D').replace(/\n/g, '%0A');
 }
-
-run()
-
+function escape(s) {
+    return s
+        .replace(/\r/g, '%0D')
+        .replace(/\n/g, '%0A')
+        .replace(/]/g, '%5D')
+        .replace(/;/g, '%3B');
+}
+//# sourceMappingURL=command.js.map
 
 /***/ })
 

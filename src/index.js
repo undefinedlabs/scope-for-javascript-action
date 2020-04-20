@@ -43,17 +43,6 @@ async function run() {
     const cypressCommand = core.getInput('cypress-command')
     const cypressEndpoint = core.getInput('cypress-endpoint') || DEFAULT_CYPRESS_ENDPOINT
 
-    let apiEndpoint, apiKey
-    try {
-      const { username, origin } = new URL(dsn)
-      apiEndpoint = origin
-      apiKey = username
-    } catch (e) {}
-
-    if (!apiEndpoint || !apiKey) {
-      throw Error('SCOPE_DSN does not have the correct format')
-    }
-
     console.log(`Command: ${command}`)
     if (dsn) {
       console.log(`DSN has been set.`)
@@ -63,15 +52,10 @@ async function run() {
       ignoreReturnCode: true,
     })
 
-    // jest tests
-    runTests(
-      command,
-      isYarn ? JEST_DEFAULT_ARGUMENTS : ['--', ...JEST_DEFAULT_ARGUMENTS],
-      apiEndpoint,
-      apiKey
-    )
+    // Jest tests
+    runTests(command, isYarn ? JEST_DEFAULT_ARGUMENTS : ['--', ...JEST_DEFAULT_ARGUMENTS], dsn)
 
-    // cypress tests
+    // Cypress tests
     if (cypressCommand) {
       fs.writeFileSync(
         CYPRESS_SUPPORT_FILE,
@@ -91,8 +75,7 @@ async function run() {
       runTests(
         cypressCommand,
         isYarn ? CYPRESS_DEFAULT_ARGUMENTS : ['--', ...CYPRESS_DEFAULT_ARGUMENTS],
-        apiEndpoint,
-        apiKey,
+        dsn,
         {
           CYPRESS_baseUrl: cypressEndpoint,
         }
@@ -103,12 +86,11 @@ async function run() {
   }
 }
 
-function runTests(command, defaultArguments, apiEndpoint, apiKey, extraEnvVariables = {}) {
+function runTests(command, defaultArguments, dsn, extraEnvVariables = {}) {
   return exec.exec(command, defaultArguments, {
     env: {
       ...process.env,
-      SCOPE_API_ENDPOINT: apiEndpoint,
-      SCOPE_APIKEY: apiKey,
+      SCOPE_DSN: dsn,
       SCOPE_INSTRUMENTATION_ENABLED: true,
       CI: true,
       ...extraEnvVariables,
