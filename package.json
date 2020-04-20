@@ -1,6 +1,6 @@
 {
   "name": "scope-for-javascript-action",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Scope for Javascript GitHub Action",
   "main": "index.js",
   "scripts": {
