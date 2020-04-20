@@ -9,9 +9,8 @@ const YARN_INSTALL_COMMAND = 'yarn add --dev @undefinedlabs/scope-agent'
 
 const JEST_DEFAULT_ARGUMENTS = [
   '--testRunner=@undefinedlabs/scope-agent/jest/testRunner',
-  '--runner=@undefinedlabs/scope-agent/jest/runner',
+  '--globalSetup=@undefinedlabs/scope-agent/jest/globalSetup',
   '--setupFilesAfterEnv=@undefinedlabs/scope-agent/jest/setupTests',
-  '--runInBand',
 ]
 const NPM_DEFAULT_TEST_COMMAND = 'npm test'
 const YARN_DEFAULT_TEST_COMMAND = 'yarn test'
@@ -110,7 +109,7 @@ function runTests(command, defaultArguments, apiEndpoint, apiKey, extraEnvVariab
       ...process.env,
       SCOPE_API_ENDPOINT: apiEndpoint,
       SCOPE_APIKEY: apiKey,
-      SCOPE_AUTO_INSTRUMENT: true,
+      SCOPE_INSTRUMENTATION_ENABLED: true,
       CI: true,
       ...extraEnvVariables,
     },

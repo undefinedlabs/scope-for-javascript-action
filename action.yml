@@ -1,6 +1,6 @@
 name: 'Scope for Javascript'
 author: 'Undefined Labs'
-description: 'Automatically instruments and runs your tests using the Scope Javascript agent.'
+description: 'Automatically instruments and runs your tests using the Scope Javascript Agent.'
 inputs:
   jest-command:
     description: 'Command to run your jest tests.'

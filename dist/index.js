@@ -34,7 +34,7 @@ module.exports =
 /******/ 	// the startup function
 /******/ 	function startup() {
 /******/ 		// Load entry module and return exports
-/******/ 		return __webpack_require__(264);
+/******/ 		return __webpack_require__(758);
 /******/ 	};
 /******/
 /******/ 	// run startup
@@ -43,94 +43,51 @@ module.exports =
 /************************************************************************/
 /******/ ({
 
-/***/ 19:
+/***/ 34:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const os = __webpack_require__(87);
+const tr = __webpack_require__(55);
 /**
- * Commands
+ * Exec a command.
+ * Output will be streamed to the live console.
+ * Returns promise with return code
  *
- * Command Format:
- *   ##[name key=value;key=value]message
- *
- * Examples:
- *   ##[warning]This is the user warning message
- *   ##[set-secret name=mypassword]definitelyNotAPassword!
+ * @param     commandLine        command to execute (can include additional args). Must be correctly escaped.
+ * @param     args               optional arguments for tool. Escaping is handled by the lib.
+ * @param     options            optional exec options.  See ExecOptions
+ * @returns   Promise<number>    exit code
  */
-function issueCommand(command, properties, message) {
-    const cmd = new Command(command, properties, message);
-    process.stdout.write(cmd.toString() + os.EOL);
-}
-exports.issueCommand = issueCommand;
-function issue(name, message = '') {
-    issueCommand(name, {}, message);
-}
-exports.issue = issue;
-const CMD_STRING = '::';
-class Command {
-    constructor(command, properties, message) {
-        if (!command) {
-            command = 'missing.command';
+function exec(commandLine, args, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const commandArgs = tr.argStringToArray(commandLine);
+        if (commandArgs.length === 0) {
+            throw new Error(`Parameter 'commandLine' cannot be null or empty.`);
         }
-        this.command = command;
-        this.properties = properties;
-        this.message = message;
-    }
-    toString() {
-        let cmdStr = CMD_STRING + this.command;
-        if (this.properties && Object.keys(this.properties).length > 0) {
-            cmdStr += ' ';
-            for (const key in this.properties) {
-                if (this.properties.hasOwnProperty(key)) {
-                    const val = this.properties[key];
-                    if (val) {
-                        // safely append the val - avoid blowing up when attempting to
-                        // call .replace() if message is not a string for some reason
-                        cmdStr += `${key}=${escape(`${val || ''}`)},`;
-                    }
-                }
-            }
-        }
-        cmdStr += CMD_STRING;
-        // safely append the message - avoid blowing up when attempting to
-        // call .replace() if message is not a string for some reason
-        const message = `${this.message || ''}`;
-        cmdStr += escapeData(message);
-        return cmdStr;
-    }
+        // Path to tool to execute should be first arg
+        const toolPath = commandArgs[0];
+        args = commandArgs.slice(1).concat(args || []);
+        const runner = new tr.ToolRunner(toolPath, args, options);
+        return runner.exec();
+    });
 }
-function escapeData(s) {
-    return s.replace(/\r/g, '%0D').replace(/\n/g, '%0A');
-}
-function escape(s) {
-    return s
-        .replace(/\r/g, '%0D')
-        .replace(/\n/g, '%0A')
-        .replace(/]/g, '%5D')
-        .replace(/;/g, '%3B');
-}
-//# sourceMappingURL=command.js.map
+exports.exec = exec;
+//# sourceMappingURL=exec.js.map
 
 /***/ }),
 
-/***/ 87:
-/***/ (function(module) {
-
-module.exports = require("os");
-
-/***/ }),
-
-/***/ 129:
-/***/ (function(module) {
-
-module.exports = require("child_process");
-
-/***/ }),
-
-/***/ 220:
+/***/ 55:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
@@ -711,178 +668,94 @@ class ExecState extends events.EventEmitter {
 
 /***/ }),
 
-/***/ 264:
-/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
+/***/ 87:
+/***/ (function(module) {
 
-const core = __webpack_require__(612)
-const exec = __webpack_require__(539)
-const fs = __webpack_require__(747)
-
-const SCOPE_DSN = 'SCOPE_DSN'
-
-const NPM_INSTALL_COMMAND = 'npm install --save-dev @undefinedlabs/scope-agent'
-const YARN_INSTALL_COMMAND = 'yarn add --dev @undefinedlabs/scope-agent'
-
-const JEST_DEFAULT_ARGUMENTS = [
-  '--testRunner=@undefinedlabs/scope-agent/jest/testRunner',
-  '--runner=@undefinedlabs/scope-agent/jest/runner',
-  '--setupFilesAfterEnv=@undefinedlabs/scope-agent/jest/setupTests',
-  '--runInBand',
-]
-const NPM_DEFAULT_TEST_COMMAND = 'npm test'
-const YARN_DEFAULT_TEST_COMMAND = 'yarn test'
-
-const CYPRESS_SUPPORT_FILE = 'SCOPE_supportIndex.js'
-const CYPRESS_PLUGIN_FILE = 'SCOPE_pluginIndex.js'
-const DEFAULT_CYPRESS_ENDPOINT = 'http://localhost:3000'
-const CYPRESS_DEFAULT_ARGUMENTS = [
-  '--config',
-  `supportFile=${CYPRESS_SUPPORT_FILE},pluginsFile=${CYPRESS_PLUGIN_FILE}`,
-]
-
-const isYarnRepo = () => fs.existsSync('yarn.lock')
-
-async function run() {
-  try {
-    const dsn = core.getInput('dsn') || process.env[SCOPE_DSN]
-
-    if (!dsn) {
-      throw Error('Cannot find the Scope DSN')
-    }
-
-    const isYarn = isYarnRepo()
-    console.log(`Project is using ${isYarn ? 'yarn' : 'npm'}`)
-
-    const defaultTestCommand = isYarn ? YARN_DEFAULT_TEST_COMMAND : NPM_DEFAULT_TEST_COMMAND
-
-    const command = core.getInput('jest-command') || defaultTestCommand
-
-    const cypressCommand = core.getInput('cypress-command')
-    const cypressEndpoint = core.getInput('cypress-endpoint') || DEFAULT_CYPRESS_ENDPOINT
-
-    let apiEndpoint, apiKey
-    try {
-      const { username, origin } = new URL(dsn)
-      apiEndpoint = origin
-      apiKey = username
-    } catch (e) {}
-
-    if (!apiEndpoint || !apiKey) {
-      throw Error('SCOPE_DSN does not have the correct format')
-    }
-
-    console.log(`Command: ${command}`)
-    if (dsn) {
-      console.log(`DSN has been set.`)
-    }
-
-    await exec.exec(isYarn ? YARN_INSTALL_COMMAND : NPM_INSTALL_COMMAND, null, {
-      ignoreReturnCode: true,
-    })
-
-    // jest tests
-    runTests(
-      command,
-      isYarn ? JEST_DEFAULT_ARGUMENTS : ['--', ...JEST_DEFAULT_ARGUMENTS],
-      apiEndpoint,
-      apiKey
-    )
-
-    // cypress tests
-    if (cypressCommand) {
-      fs.writeFileSync(
-        CYPRESS_SUPPORT_FILE,
-        'require("@undefinedlabs/scope-agent/cypress/support")'
-      )
-      fs.writeFileSync(
-        CYPRESS_PLUGIN_FILE,
-        `
-        const { initCypressPlugin } = require("@undefinedlabs/scope-agent/cypress/plugin");
-        
-        module.exports = async (on, config) => {
-          const newConfig = await initCypressPlugin(on, config);
-          return newConfig;
-        };
-      `
-      )
-      runTests(
-        cypressCommand,
-        isYarn ? CYPRESS_DEFAULT_ARGUMENTS : ['--', ...CYPRESS_DEFAULT_ARGUMENTS],
-        apiEndpoint,
-        apiKey,
-        {
-          CYPRESS_baseUrl: cypressEndpoint,
-        }
-      )
-    }
-  } catch (error) {
-    core.setFailed(error.message)
-  }
-}
-
-function runTests(command, defaultArguments, apiEndpoint, apiKey, extraEnvVariables = {}) {
-  return exec.exec(command, defaultArguments, {
-    env: {
-      ...process.env,
-      SCOPE_API_ENDPOINT: apiEndpoint,
-      SCOPE_APIKEY: apiKey,
-      SCOPE_AUTO_INSTRUMENT: true,
-      CI: true,
-      ...extraEnvVariables,
-    },
-  })
-}
-
-run()
-
+module.exports = require("os");
 
 /***/ }),
 
-/***/ 539:
+/***/ 129:
+/***/ (function(module) {
+
+module.exports = require("child_process");
+
+/***/ }),
+
+/***/ 327:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const tr = __webpack_require__(220);
+const os = __webpack_require__(87);
 /**
- * Exec a command.
- * Output will be streamed to the live console.
- * Returns promise with return code
+ * Commands
  *
- * @param     commandLine        command to execute (can include additional args). Must be correctly escaped.
- * @param     args               optional arguments for tool. Escaping is handled by the lib.
- * @param     options            optional exec options.  See ExecOptions
- * @returns   Promise<number>    exit code
+ * Command Format:
+ *   ##[name key=value;key=value]message
+ *
+ * Examples:
+ *   ##[warning]This is the user warning message
+ *   ##[set-secret name=mypassword]definitelyNotAPassword!
  */
-function exec(commandLine, args, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const commandArgs = tr.argStringToArray(commandLine);
-        if (commandArgs.length === 0) {
-            throw new Error(`Parameter 'commandLine' cannot be null or empty.`);
-        }
-        // Path to tool to execute should be first arg
-        const toolPath = commandArgs[0];
-        args = commandArgs.slice(1).concat(args || []);
-        const runner = new tr.ToolRunner(toolPath, args, options);
-        return runner.exec();
-    });
+function issueCommand(command, properties, message) {
+    const cmd = new Command(command, properties, message);
+    process.stdout.write(cmd.toString() + os.EOL);
 }
-exports.exec = exec;
-//# sourceMappingURL=exec.js.map
+exports.issueCommand = issueCommand;
+function issue(name, message = '') {
+    issueCommand(name, {}, message);
+}
+exports.issue = issue;
+const CMD_STRING = '::';
+class Command {
+    constructor(command, properties, message) {
+        if (!command) {
+            command = 'missing.command';
+        }
+        this.command = command;
+        this.properties = properties;
+        this.message = message;
+    }
+    toString() {
+        let cmdStr = CMD_STRING + this.command;
+        if (this.properties && Object.keys(this.properties).length > 0) {
+            cmdStr += ' ';
+            for (const key in this.properties) {
+                if (this.properties.hasOwnProperty(key)) {
+                    const val = this.properties[key];
+                    if (val) {
+                        // safely append the val - avoid blowing up when attempting to
+                        // call .replace() if message is not a string for some reason
+                        cmdStr += `${key}=${escape(`${val || ''}`)},`;
+                    }
+                }
+            }
+        }
+        cmdStr += CMD_STRING;
+        // safely append the message - avoid blowing up when attempting to
+        // call .replace() if message is not a string for some reason
+        const message = `${this.message || ''}`;
+        cmdStr += escapeData(message);
+        return cmdStr;
+    }
+}
+function escapeData(s) {
+    return s.replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+}
+function escape(s) {
+    return s
+        .replace(/\r/g, '%0D')
+        .replace(/\n/g, '%0A')
+        .replace(/]/g, '%5D')
+        .replace(/;/g, '%3B');
+}
+//# sourceMappingURL=command.js.map
 
 /***/ }),
 
-/***/ 612:
+/***/ 461:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
@@ -897,7 +770,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const command_1 = __webpack_require__(19);
+const command_1 = __webpack_require__(327);
 const os = __webpack_require__(87);
 const path = __webpack_require__(622);
 /**
@@ -1102,6 +975,132 @@ module.exports = require("path");
 /***/ (function(module) {
 
 module.exports = require("fs");
+
+/***/ }),
+
+/***/ 758:
+/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
+
+const core = __webpack_require__(461)
+const exec = __webpack_require__(34)
+const fs = __webpack_require__(747)
+
+const SCOPE_DSN = 'SCOPE_DSN'
+
+const NPM_INSTALL_COMMAND = 'npm install --save-dev @undefinedlabs/scope-agent'
+const YARN_INSTALL_COMMAND = 'yarn add --dev @undefinedlabs/scope-agent'
+
+const JEST_DEFAULT_ARGUMENTS = [
+  '--testRunner=@undefinedlabs/scope-agent/jest/testRunner',
+  '--globalSetup=@undefinedlabs/scope-agent/jest/globalSetup',
+  '--setupFilesAfterEnv=@undefinedlabs/scope-agent/jest/setupTests',
+]
+const NPM_DEFAULT_TEST_COMMAND = 'npm test'
+const YARN_DEFAULT_TEST_COMMAND = 'yarn test'
+
+const CYPRESS_SUPPORT_FILE = 'SCOPE_supportIndex.js'
+const CYPRESS_PLUGIN_FILE = 'SCOPE_pluginIndex.js'
+const DEFAULT_CYPRESS_ENDPOINT = 'http://localhost:3000'
+const CYPRESS_DEFAULT_ARGUMENTS = [
+  '--config',
+  `supportFile=${CYPRESS_SUPPORT_FILE},pluginsFile=${CYPRESS_PLUGIN_FILE}`,
+]
+
+const isYarnRepo = () => fs.existsSync('yarn.lock')
+
+async function run() {
+  try {
+    const dsn = core.getInput('dsn') || process.env[SCOPE_DSN]
+
+    if (!dsn) {
+      throw Error('Cannot find the Scope DSN')
+    }
+
+    const isYarn = isYarnRepo()
+    console.log(`Project is using ${isYarn ? 'yarn' : 'npm'}`)
+
+    const defaultTestCommand = isYarn ? YARN_DEFAULT_TEST_COMMAND : NPM_DEFAULT_TEST_COMMAND
+
+    const command = core.getInput('jest-command') || defaultTestCommand
+
+    const cypressCommand = core.getInput('cypress-command')
+    const cypressEndpoint = core.getInput('cypress-endpoint') || DEFAULT_CYPRESS_ENDPOINT
+
+    let apiEndpoint, apiKey
+    try {
+      const { username, origin } = new URL(dsn)
+      apiEndpoint = origin
+      apiKey = username
+    } catch (e) {}
+
+    if (!apiEndpoint || !apiKey) {
+      throw Error('SCOPE_DSN does not have the correct format')
+    }
+
+    console.log(`Command: ${command}`)
+    if (dsn) {
+      console.log(`DSN has been set.`)
+    }
+
+    await exec.exec(isYarn ? YARN_INSTALL_COMMAND : NPM_INSTALL_COMMAND, null, {
+      ignoreReturnCode: true,
+    })
+
+    // jest tests
+    runTests(
+      command,
+      isYarn ? JEST_DEFAULT_ARGUMENTS : ['--', ...JEST_DEFAULT_ARGUMENTS],
+      apiEndpoint,
+      apiKey
+    )
+
+    // cypress tests
+    if (cypressCommand) {
+      fs.writeFileSync(
+        CYPRESS_SUPPORT_FILE,
+        'require("@undefinedlabs/scope-agent/cypress/support")'
+      )
+      fs.writeFileSync(
+        CYPRESS_PLUGIN_FILE,
+        `
+        const { initCypressPlugin } = require("@undefinedlabs/scope-agent/cypress/plugin");
+        
+        module.exports = async (on, config) => {
+          const newConfig = await initCypressPlugin(on, config);
+          return newConfig;
+        };
+      `
+      )
+      runTests(
+        cypressCommand,
+        isYarn ? CYPRESS_DEFAULT_ARGUMENTS : ['--', ...CYPRESS_DEFAULT_ARGUMENTS],
+        apiEndpoint,
+        apiKey,
+        {
+          CYPRESS_baseUrl: cypressEndpoint,
+        }
+      )
+    }
+  } catch (error) {
+    core.setFailed(error.message)
+  }
+}
+
+function runTests(command, defaultArguments, apiEndpoint, apiKey, extraEnvVariables = {}) {
+  return exec.exec(command, defaultArguments, {
+    env: {
+      ...process.env,
+      SCOPE_API_ENDPOINT: apiEndpoint,
+      SCOPE_APIKEY: apiKey,
+      SCOPE_INSTRUMENTATION_ENABLED: true,
+      CI: true,
+      ...extraEnvVariables,
+    },
+  })
+}
+
+run()
+
 
 /***/ })
 
